@@ -1,9 +1,16 @@
 import numpy as np
-import scipy as sp
-import plotly
-import plotly.graph_objs as go
-import plotly.express as px
-from plotly.subplots import make_subplots
+import dearpygui.dearpygui as dpg
+
+# Определение системы ОДУ
+def System(y, t):
+    S, I, D = y
+    N = S + I + D
+    dSdt = - (beta * S * I) / N + gamma * I # Прирост выздоровливающих - 
+    # прирост заболевания
+    dIdt = beta * I * S / N - gamma * I - sigma * I # Прирост инфецированных минус
+    # прирост выздоровления и минус прирост смертности
+    dDdt = sigma * I # Прирост смертности
+    return [dSdt, dIdt, dDdt]
 
 # Метод Рунге-Кутта 4-го порядка точности
 # Данная реализация работает для n уравнений, 
@@ -30,45 +37,82 @@ def rk4(y, t, System):
 
     return result
 
-beta = 0.35 # Вероятность заразить
-gamma = 0.2 # Вероятность выздоровления
-sigma = 0.01 # Вероятность наличия у инфецированных особей сопутствующих заболеваний
-# приводящих к смерти
+# Функция обновления графиков относительно
+# изменения значений на слайдерах
+# срабатывает при нажатии на соответствующую кнопку
+def update_series():
+    global beta, sigma, gamma 
+    beta = dpg.get_value('beta_slider')
+    gamma = dpg.get_value('gamma_slider')
+    sigma = dpg.get_value('sigma_slider')
 
-# Определение системы ОДУ
-def System(y, t):
-    S, I, D = y
-    N = S + I + D
-    dSdt = - (beta * S * I) / N + gamma * I # Прирост выздоровливающих - 
-    # прирост заболевания
-    dIdt = beta * I * S / N - gamma * I - sigma * I # Прирост инфецированных минус
-    # прирост выздоровления и минус прирост смертности
-    dDdt = sigma * I # Прирост смертности
-    return [dSdt, dIdt, dDdt]
+    solve = rk4(start, time, System)
+    solve = np.array(solve)
+    S = solve[:,0] # Колиство восприимчивых особей в момент времени t
+    I = solve[:,1] # Колиство инфецированных особей в момент времени t
+    D = solve[:,2] # Колиство погибших особей в момент времени t
+    y1 = S.tolist()
+    y2 = I.tolist()
+    y3 = D.tolist()
+    dpg.set_value('Survived_series', [time, y1])
+    dpg.set_value('Infected_series', [time, y2])
+    dpg.set_value('Dead_series', [time, y3])
 
 time = np.linspace(0, 100, 10) # Массив времени (независимая переменная)
-start = [99, 1, 0] # Начальные значения (99 восприимчивых, 1 инфецированный)
+time = time.tolist()
 
-solve = rk4(start, time, System) # численное решение Рунге-Кутта 4-го порядка
-solve = np.array(solve)
+dpg.create_context()
 
-S = solve[:,0] # Колиство восприимчивых особей в момент времени t
-I = solve[:,1] # Колиство инфецированных особей в момент времени t
-D = solve[:,2] # Колиство погибших особей в момент времени t
+# Создать окно с разрешением 2560*1600
+with dpg.window(tag = 'Main', width=2560, height=1600):
 
-# Печать результатов в консоль
-print('Результаты, полученные с помощью метода Рунге-Кутта 4-го порядка')
-print('Количество восприимчивых особей ', round(S[len(S)-1]))
-print('Количество заражённых особей ', round(I[len(I)-1]))
-print('Количество погибших особей ', round(D[len(D)-1]), '\n')
+    dpg.add_slider_float(label='Infection chance', default_value=0.2,
+                          max_value=0.5, tag='beta_slider')
+    dpg.add_slider_float(label='Recovery chance', default_value=0.05, 
+                         max_value=0.5, tag='gamma_slider')
+    dpg.add_slider_float(label='Death chance', default_value=0.05, 
+                         max_value=0.5, tag='sigma_slider')
 
-fig = go.Figure()
-fig.add_trace(go.Scatter(x=time, y=S, name='Восприимчивые особи'))
-fig.add_trace(go.Scatter(x=time, y=I, name='Заражённые особи'))
-fig.add_trace(go.Scatter(x=time, y=D, name='Погибшие особи'))
-fig.update_layout(legend_orientation='h',
-                  title='Визуализация модели SID',
-                  xaxis_title='Время',
-                  yaxis_title='Количество особей')
-fig.update_traces(hoverinfo='all', hovertemplate='Время: %{x}<br>Количество: %{y}')
-fig.show()
+    beta = dpg.get_value('beta_slider') # Вероятность заразить
+    gamma = dpg.get_value('gamma_slider') # Вероятность выздоровления
+    sigma = dpg.get_value('sigma_slider') # Вероятность наличия у инфецированных 
+    # особей сопутствующих заболеваний
+    # приводящих к смерти
+
+    start = [99, 1, 0] # Начальные значения (99 восприимчивых, 1 инфецированный)
+    solve = rk4(start, time, System) # численное решение Рунге-Кутта 4-го порядка
+    solve = np.array(solve)
+
+    S = solve[:,0] # Колиство восприимчивых особей в момент времени t
+    I = solve[:,1] # Колиство инфецированных особей в момент времени t
+    D = solve[:,2] # Колиство погибших особей в момент времени t
+
+    dpg.add_button(label="Update Series", callback=update_series)
+
+    # Окно графиков с настройками
+    with dpg.plot(width=-1):
+        dpg.add_plot_legend()
+
+        # создать x axis
+        dpg.add_plot_axis(dpg.mvXAxis, label="Time")
+        # создать y axis
+        dpg.add_plot_axis(dpg.mvYAxis, label = 'Count of creatures',
+                          tag='y_axis')
+
+        y1 = S.tolist()
+        y2 = I.tolist()
+        y3 = D.tolist()
+
+        dpg.add_line_series(time, y1, label="Survived", 
+                            parent='y_axis', tag='Survived_series')
+        dpg.add_line_series(time, y2, label="Infected", 
+                            parent='y_axis', tag='Infected_series')
+        dpg.add_line_series(time, y3, label="Dead", 
+                            parent='y_axis', tag='Dead_series')
+
+dpg.create_viewport(title='Model SID', width=1024, height=540)
+dpg.setup_dearpygui()
+dpg.show_viewport()
+dpg.set_primary_window('Main', True)
+dpg.start_dearpygui()
+dpg.destroy_context()
