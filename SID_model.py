@@ -63,15 +63,20 @@ time = time.tolist()
 
 dpg.create_context()
 
+# add a font registry
+with dpg.font_registry():
+    # first argument ids the path to the .ttf or .otf file
+    default_font = dpg.add_font("Univers Bold.ttf", 20)
+
 # Создать окно с разрешением 2560*1600
-with dpg.window(tag = 'Main', width=2560, height=1600):
+with dpg.window(tag = 'Main', autosize=True):
 
     dpg.add_slider_float(label='Infection chance', default_value=0.2,
-                          max_value=0.5, tag='beta_slider')
+                          max_value=0.5, tag='beta_slider', format='%0.2f')
     dpg.add_slider_float(label='Recovery chance', default_value=0.05, 
-                         max_value=0.5, tag='gamma_slider')
+                         max_value=0.5, tag='gamma_slider', format='%0.2f')
     dpg.add_slider_float(label='Death chance', default_value=0.05, 
-                         max_value=0.5, tag='sigma_slider')
+                         max_value=0.5, tag='sigma_slider', format='%0.2f')
 
     beta = dpg.get_value('beta_slider') # Вероятность заразить
     gamma = dpg.get_value('gamma_slider') # Вероятность выздоровления
@@ -110,7 +115,8 @@ with dpg.window(tag = 'Main', width=2560, height=1600):
         dpg.add_line_series(time, y3, label="Dead", 
                             parent='y_axis', tag='Dead_series')
 
-dpg.create_viewport(title='Model SID', width=1024, height=540)
+dpg.bind_font(default_font)
+dpg.create_viewport(title='Model SID', width=900, height=540)
 dpg.setup_dearpygui()
 dpg.show_viewport()
 dpg.set_primary_window('Main', True)
