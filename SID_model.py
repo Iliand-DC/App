@@ -7,17 +7,12 @@ def System(y, t):
     S, I, D = y
     N = S + I + D
 
-    for i in range(len(y)-1):
-        if y[i] < 0:
-            y[i] = 0
-        elif y[i] > N:
-            y[i] = N
-
     dSdt = - (beta * S * I) / N + gamma * I # Прирост выздоровливающих - 
     # прирост заболевания
     dIdt = beta * I * S / N - gamma * I - sigma * I # Прирост инфецированных минус
     # прирост выздоровления и минус прирост смертности
     dDdt = sigma * I # Прирост смертности
+
     return [dSdt, dIdt, dDdt]
 
 # Метод Рунге-Кутта 4-го порядка точности
@@ -40,16 +35,6 @@ def rk4(y, t, System, ac = [0,0,0]):
         k4 = [System(y_4, t[i] + h)[j] * h for j in range(len(y))]
 
         delta_y = [(k1[j] + 2*k2[j] + 2*k3[j] + k4[j])/6 for j in range(len(y))]
-
-        #ac += delta_y
-        ac = [ac[j] + delta_y[j] for j in range(len(delta_y))]
-
-        for j in range(len(delta_y)):
-            print(y[j], ac[j], (y[j] + ac[j]) - y[j])
-            if abs((y[j] + ac[j]) - y[j]) > eps:
-                print("Entered")
-                y[j] += ac[j]
-                ac[j] = 0
      
         y = [y[j] + delta_y[j] for j in range(len(y))]
         
@@ -61,13 +46,12 @@ def rk4(y, t, System, ac = [0,0,0]):
 # изменения значений на слайдерах
 # срабатывает при нажатии на соответствующую кнопку
 def update_series():
-    global beta, sigma, gamma, ac
+    global beta, sigma, gamma
     beta = dpg.get_value('beta_slider')
     gamma = dpg.get_value('gamma_slider')
     sigma = dpg.get_value('sigma_slider')
 
-    solve = rk4(start, time, System, ac)
-    ac = [0,0,0]
+    solve = rk4(start, time, System)
     #solve = sp.integrate.odeint(System, start, time)
     solve = np.array(solve)
     S = solve[:,0] # Колиство восприимчивых особей в момент времени t
@@ -89,11 +73,11 @@ dpg.create_context()
 with dpg.window(tag = 'Main', autosize=True):
 
     dpg.add_slider_float(label='Infection chance', default_value=0.2,
-                          max_value=1., tag='beta_slider', format='%0.2f')
+                          max_value=0.5, tag='beta_slider', format='%0.2f')
     dpg.add_slider_float(label='Recovery chance', default_value=0.05, 
-                         max_value=1., tag='gamma_slider', format='%0.2f')
+                         max_value=0.5, tag='gamma_slider', format='%0.2f')
     dpg.add_slider_float(label='Death chance', default_value=0.05, 
-                         max_value=1., tag='sigma_slider', format='%0.2f')
+                         max_value=0.5, tag='sigma_slider', format='%0.2f')
 
     beta = dpg.get_value('beta_slider') # Вероятность заразить
     gamma = dpg.get_value('gamma_slider') # Вероятность выздоровления
@@ -102,8 +86,7 @@ with dpg.window(tag = 'Main', autosize=True):
     # приводящих к смерти
 
     start = [99, 1, 0] # Начальные значения (99 восприимчивых, 1 инфецированный)
-    ac = [0,0,0]
-    solve = rk4(start, time, System, ac) # численное решение Рунге-Кутта 4-го порядка
+    solve = rk4(start, time, System) # численное решение Рунге-Кутта 4-го порядка
     #solve = sp.integrate.odeint(System, start, time)
     solve = np.array(solve)
 
