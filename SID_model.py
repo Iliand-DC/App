@@ -2,6 +2,11 @@ import numpy as np
 import dearpygui.dearpygui as dpg
 import scipy as sp
 
+def print_result(S, I, D):
+    print(S[len(S)-1])
+    print(I[len(I)-1])
+    print(D[len(D)-1])
+
 # Определение системы ОДУ
 def System(y, t):
     S, I, D = y
@@ -63,6 +68,7 @@ def update_series():
     dpg.set_value('Survived_series', [time, y1])
     dpg.set_value('Infected_series', [time, y2])
     dpg.set_value('Dead_series', [time, y3])
+    print_result(S, I, D)
 
 time = np.linspace(0, 100, 10) # Массив времени (независимая переменная)
 time = time.tolist()
@@ -93,6 +99,7 @@ with dpg.window(tag = 'Main', autosize=True):
     S = solve[:,0] # Колиство восприимчивых особей в момент времени t
     I = solve[:,1] # Колиство инфецированных особей в момент времени t
     D = solve[:,2] # Колиство погибших особей в момент времени t
+    print_result(S, I, D)
 
     dpg.add_button(label="Update Series", callback=update_series)
 
