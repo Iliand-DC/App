@@ -3,12 +3,13 @@ import dearpygui.dearpygui as dpg
 import scipy as sp
 
 def print_result(S, I, D):
-    print(S[len(S)-1])
-    print(I[len(I)-1])
-    print(D[len(D)-1])
+    print('---------------------')
+    print('Количество восприимчивых: ',round(S[len(S)-1]))
+    print('Количество заражённых: ',round(I[len(I)-1]))
+    print('Количество мёртвых: ',round(D[len(D)-1]))
 
 # Определение системы ОДУ
-def System(y, t):
+def SID(y, t):
     S, I, D = y
     N = S + I + D
 
@@ -23,21 +24,20 @@ def System(y, t):
 # Метод Рунге-Кутта 4-го порядка точности
 # Данная реализация работает для n уравнений, 
 # если к ним есть n начальных условий
-def rk4(y, t, System, ac = [0,0,0]):
+def rk4(y, t, SID):
     h = t[len(t)-1] - t[len(t)-2]
-    eps = 1e-9
     result = [y]
     for i in range(len(t)-1):
-        k1 = [System(y, t[i])[j] * h for j in range(len(y))]
+        k1 = [SID(y, t[i])[j] * h for j in range(len(y))]
 
         y_2 = [y[j] + k1[j]/2 for j in range(len(y))]
-        k2 = [System(y_2, t[i] + h/2)[j] * h for j in range(len(y))]
+        k2 = [SID(y_2, t[i] + h/2)[j] * h for j in range(len(y))]
 
         y_3 = [y[j] + k2[j]/2 for j in range(len(y))]
-        k3 = [System(y_3, t[i] + h/2)[j] * h for j in range(len(y))]
+        k3 = [SID(y_3, t[i] + h/2)[j] * h for j in range(len(y))]
 
         y_4 = [y[j] + k3[j] for j in range(len(y))]
-        k4 = [System(y_4, t[i] + h)[j] * h for j in range(len(y))]
+        k4 = [SID(y_4, t[i] + h)[j] * h for j in range(len(y))]
 
         delta_y = [(k1[j] + 2*k2[j] + 2*k3[j] + k4[j])/6 for j in range(len(y))]
      
@@ -56,8 +56,8 @@ def update_series():
     gamma = dpg.get_value('gamma_slider')
     sigma = dpg.get_value('sigma_slider')
 
-    solve = rk4(start, time, System)
-    #solve = sp.integrate.odeint(System, start, time)
+    solve = rk4(start, time, SID)
+    #solve = sp.integrate.odeint(SID, start, time)
     solve = np.array(solve)
     S = solve[:,0] # Колиство восприимчивых особей в момент времени t
     I = solve[:,1] # Колиство инфецированных особей в момент времени t
@@ -70,7 +70,7 @@ def update_series():
     dpg.set_value('Dead_series', [time, y3])
     print_result(S, I, D)
 
-time = np.linspace(0, 100, 10) # Массив времени (независимая переменная)
+time = np.linspace(0, 100, 100) # Массив времени (независимая переменная)
 time = time.tolist()
 
 dpg.create_context()
@@ -79,11 +79,11 @@ dpg.create_context()
 with dpg.window(tag = 'Main', autosize=True):
 
     dpg.add_slider_float(label='Infection chance', default_value=0.2,
-                          max_value=0.5, tag='beta_slider', format='%0.2f')
+                          max_value=1., tag='beta_slider', format='%0.2f')
     dpg.add_slider_float(label='Recovery chance', default_value=0.05, 
-                         max_value=0.5, tag='gamma_slider', format='%0.2f')
+                         max_value=1., tag='gamma_slider', format='%0.2f')
     dpg.add_slider_float(label='Death chance', default_value=0.05, 
-                         max_value=0.5, tag='sigma_slider', format='%0.2f')
+                         max_value=1., tag='sigma_slider', format='%0.2f')
 
     beta = dpg.get_value('beta_slider') # Вероятность заразить
     gamma = dpg.get_value('gamma_slider') # Вероятность выздоровления
@@ -92,8 +92,8 @@ with dpg.window(tag = 'Main', autosize=True):
     # приводящих к смерти
 
     start = [99, 1, 0] # Начальные значения (99 восприимчивых, 1 инфецированный)
-    solve = rk4(start, time, System) # численное решение Рунге-Кутта 4-го порядка
-    #solve = sp.integrate.odeint(System, start, time)
+    solve = rk4(start, time, SID) # численное решение Рунге-Кутта 4-го порядка
+    #solve = sp.integrate.odeint(SID, start, time)
     solve = np.array(solve)
 
     S = solve[:,0] # Колиство восприимчивых особей в момент времени t
@@ -104,7 +104,7 @@ with dpg.window(tag = 'Main', autosize=True):
     dpg.add_button(label="Update Series", callback=update_series)
 
     # Окно графиков с настройками
-    with dpg.plot(width=-1):
+    with dpg.plot(width=-1) as plots:
         dpg.add_plot_legend()
 
         # создать x axis
