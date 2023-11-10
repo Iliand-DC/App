@@ -1,19 +1,7 @@
 import numpy as np
 import dearpygui.dearpygui as dpg
 from RungeKutta import rk4
-
-# Определение системы ОДУ
-def SID(y, t):
-    S, I, D = y
-    N = S + I + D
-
-    dSdt = - (beta * S * I) / N + gamma * I # Прирост выздоровливающих - 
-    # прирост заболевания
-    dIdt = beta * I * S / N - gamma * I - sigma * I # Прирост инфецированных минус
-    # прирост выздоровления и минус прирост смертности
-    dDdt = sigma * I # Прирост смертности
-
-    return [dSdt, dIdt, dDdt]
+from Model import sid_model
 
 # Функция обновления графиков относительно
 # изменения значений на слайдерах
@@ -23,18 +11,17 @@ def update_series():
     beta = dpg.get_value('beta_slider')
     gamma = dpg.get_value('gamma_slider')
     sigma = dpg.get_value('sigma_slider')
+    ode_system = sid_model(beta, gamma, sigma)
 
-    solve = rk4(start, time, SID)
+    solve = rk4(start, time, ode_system.SID)
     solve = np.array(solve)
+    
     S = solve[:,0] # Колиство восприимчивых особей в момент времени t
     I = solve[:,1] # Колиство инфецированных особей в момент времени t
     D = solve[:,2] # Колиство погибших особей в момент времени t
-    y1 = S.tolist()
-    y2 = I.tolist()
-    y3 = D.tolist()
-    dpg.set_value('Survived_series', [time, y1])
-    dpg.set_value('Infected_series', [time, y2])
-    dpg.set_value('Dead_series', [time, y3])
+    dpg.set_value('Survived_series', [time, S.tolist()])
+    dpg.set_value('Infected_series', [time, I.tolist()])
+    dpg.set_value('Dead_series', [time, D.tolist()])
     dpg.set_value('Survived_text', 'Survived creatures: ' + str(round(S[len(S)-1])))
     dpg.set_value('Infected_text', 'Infected creatures: ' + str(round(I[len(I)-1])))
     dpg.set_value('Dead_text', 'Dead creatures: ' + str(round(D[len(D)-1])))
@@ -69,8 +56,9 @@ with dpg.window(tag = 'Main', autosize=True):
     # особей сопутствующих заболеваний
     # приводящих к смерти
 
+    ode_system = sid_model(beta, gamma, sigma)
     start = [99, 1, 0] # Начальные значения (99 восприимчивых, 1 инфецированный)
-    solve = rk4(start, time, SID) # численное решение Рунге-Кутта 4-го порядка
+    solve = rk4(start, time, ode_system.SID) # численное решение Рунге-Кутта 4-го порядка
     solve = np.array(solve)
 
     S = solve[:,0] # Колиство восприимчивых особей в момент времени t
@@ -94,15 +82,11 @@ with dpg.window(tag = 'Main', autosize=True):
                           tag='y_axis')
         dpg.set_axis_limits(dpg.last_item(), -10, 110)
 
-        y1 = S.tolist()
-        y2 = I.tolist()
-        y3 = D.tolist()
-
-        dpg.add_line_series(time, y1, label="Survived", 
+        dpg.add_line_series(time, S.tolist(), label="Survived", 
                             parent='y_axis', tag='Survived_series')
-        dpg.add_line_series(time, y2, label="Infected", 
+        dpg.add_line_series(time, I.tolist(), label="Infected", 
                             parent='y_axis', tag='Infected_series')
-        dpg.add_line_series(time, y3, label="Dead", 
+        dpg.add_line_series(time, D.tolist(), label="Dead", 
                             parent='y_axis', tag='Dead_series')
         
 
