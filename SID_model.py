@@ -1,5 +1,6 @@
 import numpy as np
 import dearpygui.dearpygui as dpg
+from RungeKutta import rk4
 
 # Определение системы ОДУ
 def SID(y, t):
@@ -13,32 +14,6 @@ def SID(y, t):
     dDdt = sigma * I # Прирост смертности
 
     return [dSdt, dIdt, dDdt]
-
-# Метод Рунге-Кутта 4-го порядка точности
-# Данная реализация работает для n уравнений, 
-# если к ним есть n начальных условий
-def rk4(y, t, SID):
-    h = t[len(t)-1] - t[len(t)-2]
-    result = [y]
-    for i in range(len(t)-1):
-        k1 = [SID(y, t[i])[j] * h for j in range(len(y))]
-
-        y_2 = [y[j] + k1[j]/2 for j in range(len(y))]
-        k2 = [SID(y_2, t[i] + h/2)[j] * h for j in range(len(y))]
-
-        y_3 = [y[j] + k2[j]/2 for j in range(len(y))]
-        k3 = [SID(y_3, t[i] + h/2)[j] * h for j in range(len(y))]
-
-        y_4 = [y[j] + k3[j] for j in range(len(y))]
-        k4 = [SID(y_4, t[i] + h)[j] * h for j in range(len(y))]
-
-        delta_y = [(k1[j] + 2*k2[j] + 2*k3[j] + k4[j])/6 for j in range(len(y))]
-     
-        y = [y[j] + delta_y[j] for j in range(len(y))]
-        
-        result.append(y)
-
-    return result
 
 # Функция обновления графиков относительно
 # изменения значений на слайдерах
@@ -72,6 +47,12 @@ dpg.create_context()
 # Создать окно с разрешением 2560*1600
 with dpg.window(tag = 'Main', autosize=True):
 
+    # Создаём тему для графиков
+    with dpg.theme(tag="plot_theme"):
+        with dpg.theme_component(dpg.mvLineSeries):
+            dpg.add_theme_style(dpg.mvPlotStyleVar_LineWeight, 3, category=dpg.mvThemeCat_Plots)
+
+
     dpg.add_slider_float(label='Infection chance', default_value=0.2,
                           max_value=1., tag='beta_slider', format='%0.2f',
                           callback=update_series)
@@ -101,14 +82,17 @@ with dpg.window(tag = 'Main', autosize=True):
     dpg.add_text('Dead creatures: ' + str(round(D[len(D)-1])), tag='Dead_text')
 
     # Окно графиков с настройками
-    with dpg.plot(width=-1) as plots:
+    with dpg.plot(width=-1):
+
         dpg.add_plot_legend()
 
         # создать x axis
         dpg.add_plot_axis(dpg.mvXAxis, label="Time")
+        dpg.set_axis_limits(dpg.last_item(), -10, 110)
         # создать y axis
         dpg.add_plot_axis(dpg.mvYAxis, label = 'Count of creatures',
                           tag='y_axis')
+        dpg.set_axis_limits(dpg.last_item(), -10, 110)
 
         y1 = S.tolist()
         y2 = I.tolist()
@@ -120,6 +104,11 @@ with dpg.window(tag = 'Main', autosize=True):
                             parent='y_axis', tag='Infected_series')
         dpg.add_line_series(time, y3, label="Dead", 
                             parent='y_axis', tag='Dead_series')
+        
+
+        dpg.bind_item_theme('Survived_series', 'plot_theme')
+        dpg.bind_item_theme('Infected_series', 'plot_theme')
+        dpg.bind_item_theme('Dead_series', 'plot_theme')
         
 
 dpg.create_viewport(title='Model SID', width=900, height=540)
