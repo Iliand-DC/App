@@ -1,6 +1,7 @@
 import numpy as np
 import dearpygui.dearpygui as dpg
 import scipy as sp
+import dearpygui.demo as demo
 
 def print_result(S, I, D):
     print('---------------------')
@@ -68,7 +69,10 @@ def update_series():
     dpg.set_value('Survived_series', [time, y1])
     dpg.set_value('Infected_series', [time, y2])
     dpg.set_value('Dead_series', [time, y3])
-    print_result(S, I, D)
+    dpg.set_value('Survived_text', 'Survived creatures: ' + str(round(S[len(S)-1])))
+    dpg.set_value('Infected_text', 'Infected creatures: ' + str(round(I[len(I)-1])))
+    dpg.set_value('Dead_text', 'Dead creatures: ' + str(round(D[len(D)-1])))
+    #print_result(S, I, D)
 
 time = np.linspace(0, 100, 100) # Массив времени (независимая переменная)
 time = time.tolist()
@@ -79,11 +83,14 @@ dpg.create_context()
 with dpg.window(tag = 'Main', autosize=True):
 
     dpg.add_slider_float(label='Infection chance', default_value=0.2,
-                          max_value=1., tag='beta_slider', format='%0.2f')
+                          max_value=1., tag='beta_slider', format='%0.2f',
+                          callback=update_series)
     dpg.add_slider_float(label='Recovery chance', default_value=0.05, 
-                         max_value=1., tag='gamma_slider', format='%0.2f')
+                         max_value=1., tag='gamma_slider', format='%0.2f',
+                         callback=update_series)
     dpg.add_slider_float(label='Death chance', default_value=0.05, 
-                         max_value=1., tag='sigma_slider', format='%0.2f')
+                         max_value=1., tag='sigma_slider', format='%0.2f',
+                         callback=update_series)
 
     beta = dpg.get_value('beta_slider') # Вероятность заразить
     gamma = dpg.get_value('gamma_slider') # Вероятность выздоровления
@@ -99,9 +106,12 @@ with dpg.window(tag = 'Main', autosize=True):
     S = solve[:,0] # Колиство восприимчивых особей в момент времени t
     I = solve[:,1] # Колиство инфецированных особей в момент времени t
     D = solve[:,2] # Колиство погибших особей в момент времени t
-    print_result(S, I, D)
+    #print_result(S, I, D)
 
-    dpg.add_button(label="Update Series", callback=update_series)
+    #dpg.add_button(label="Update Series", callback=update_series)
+    dpg.add_text('Survived creatures: ' + str(round(S[len(S)-1])), tag='Survived_text')
+    dpg.add_text('Infected creatures: ' + str(round(I[len(I)-1])), tag='Infected_text')
+    dpg.add_text('Dead creatures: ' + str(round(D[len(D)-1])), tag='Dead_text')
 
     # Окно графиков с настройками
     with dpg.plot(width=-1) as plots:
@@ -124,6 +134,7 @@ with dpg.window(tag = 'Main', autosize=True):
         dpg.add_line_series(time, y3, label="Dead", 
                             parent='y_axis', tag='Dead_series')
         
+
 dpg.create_viewport(title='Model SID', width=900, height=540)
 dpg.setup_dearpygui()
 dpg.show_viewport()
