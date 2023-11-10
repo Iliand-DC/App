@@ -1,13 +1,5 @@
 import numpy as np
 import dearpygui.dearpygui as dpg
-import scipy as sp
-import dearpygui.demo as demo
-
-def print_result(S, I, D):
-    print('---------------------')
-    print('Количество восприимчивых: ',round(S[len(S)-1]))
-    print('Количество заражённых: ',round(I[len(I)-1]))
-    print('Количество мёртвых: ',round(D[len(D)-1]))
 
 # Определение системы ОДУ
 def SID(y, t):
@@ -58,7 +50,6 @@ def update_series():
     sigma = dpg.get_value('sigma_slider')
 
     solve = rk4(start, time, SID)
-    #solve = sp.integrate.odeint(SID, start, time)
     solve = np.array(solve)
     S = solve[:,0] # Колиство восприимчивых особей в момент времени t
     I = solve[:,1] # Колиство инфецированных особей в момент времени t
@@ -72,7 +63,6 @@ def update_series():
     dpg.set_value('Survived_text', 'Survived creatures: ' + str(round(S[len(S)-1])))
     dpg.set_value('Infected_text', 'Infected creatures: ' + str(round(I[len(I)-1])))
     dpg.set_value('Dead_text', 'Dead creatures: ' + str(round(D[len(D)-1])))
-    #print_result(S, I, D)
 
 time = np.linspace(0, 100, 100) # Массив времени (независимая переменная)
 time = time.tolist()
@@ -100,15 +90,12 @@ with dpg.window(tag = 'Main', autosize=True):
 
     start = [99, 1, 0] # Начальные значения (99 восприимчивых, 1 инфецированный)
     solve = rk4(start, time, SID) # численное решение Рунге-Кутта 4-го порядка
-    #solve = sp.integrate.odeint(SID, start, time)
     solve = np.array(solve)
 
     S = solve[:,0] # Колиство восприимчивых особей в момент времени t
     I = solve[:,1] # Колиство инфецированных особей в момент времени t
     D = solve[:,2] # Колиство погибших особей в момент времени t
-    #print_result(S, I, D)
 
-    #dpg.add_button(label="Update Series", callback=update_series)
     dpg.add_text('Survived creatures: ' + str(round(S[len(S)-1])), tag='Survived_text')
     dpg.add_text('Infected creatures: ' + str(round(I[len(I)-1])), tag='Infected_text')
     dpg.add_text('Dead creatures: ' + str(round(D[len(D)-1])), tag='Dead_text')
