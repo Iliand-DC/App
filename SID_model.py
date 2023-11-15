@@ -16,12 +16,12 @@ def update_series():
     solve = rk4(start, time, ode_system.SID)
     solve = np.array(solve)
     
-    S = solve[:,0] # Колиство восприимчивых особей в момент времени t
-    I = solve[:,1] # Колиство инфецированных особей в момент времени t
-    D = solve[:,2] # Колиство погибших особей в момент времени t
-    dpg.set_value('Survived_series', [time, S.tolist()])
-    dpg.set_value('Infected_series', [time, I.tolist()])
-    dpg.set_value('Dead_series', [time, D.tolist()])
+    S = list(solve[:,0]) # Колиство восприимчивых особей в момент времени t
+    I = list(solve[:,1]) # Колиство инфецированных особей в момент времени t
+    D = list(solve[:,2]) # Колиство погибших особей в момент времени t
+    dpg.set_value('Survived_series', [time, S])
+    dpg.set_value('Infected_series', [time, I])
+    dpg.set_value('Dead_series', [time, D])
     dpg.set_value('Survived_text', 'Survived creatures: ' + str(round(S[len(S)-1])))
     dpg.set_value('Infected_text', 'Infected creatures: ' + str(round(I[len(I)-1])))
     dpg.set_value('Dead_text', 'Dead creatures: ' + str(round(D[len(D)-1])))
@@ -61,9 +61,9 @@ with dpg.window(tag = 'Main', autosize=True):
     solve = rk4(start, time, ode_system.SID) # численное решение Рунге-Кутта 4-го порядка
     solve = np.array(solve)
 
-    S = solve[:,0] # Колиство восприимчивых особей в момент времени t
-    I = solve[:,1] # Колиство инфецированных особей в момент времени t
-    D = solve[:,2] # Колиство погибших особей в момент времени t
+    S = list(solve[:,0]) # Колиство восприимчивых особей в момент времени t
+    I = list(solve[:,1]) # Колиство инфецированных особей в момент времени t
+    D = list(solve[:,2]) # Колиство погибших особей в момент времени t
 
     dpg.add_text('Survived creatures: ' + str(round(S[len(S)-1])), tag='Survived_text')
     dpg.add_text('Infected creatures: ' + str(round(I[len(I)-1])), tag='Infected_text')
@@ -71,9 +71,6 @@ with dpg.window(tag = 'Main', autosize=True):
 
     # Окно графиков с настройками
     with dpg.plot(width=-1):
-
-        dpg.add_plot_legend()
-
         # создать x axis
         dpg.add_plot_axis(dpg.mvXAxis, label="Time")
         dpg.set_axis_limits(dpg.last_item(), -10, 110)
@@ -82,19 +79,19 @@ with dpg.window(tag = 'Main', autosize=True):
                           tag='y_axis')
         dpg.set_axis_limits(dpg.last_item(), -10, 110)
 
-        dpg.add_line_series(time, S.tolist(), label="Survived", 
+        dpg.add_line_series(time, S, label="Survived", 
                             parent='y_axis', tag='Survived_series')
-        dpg.add_line_series(time, I.tolist(), label="Infected", 
+        dpg.add_line_series(time, I, label="Infected", 
                             parent='y_axis', tag='Infected_series')
-        dpg.add_line_series(time, D.tolist(), label="Dead", 
+        dpg.add_line_series(time, D, label="Dead", 
                             parent='y_axis', tag='Dead_series')
         
 
         dpg.bind_item_theme('Survived_series', 'plot_theme')
         dpg.bind_item_theme('Infected_series', 'plot_theme')
         dpg.bind_item_theme('Dead_series', 'plot_theme')
+        dpg.add_plot_legend()
         
-
 dpg.create_viewport(title='Model SID', width=900, height=540)
 dpg.setup_dearpygui()
 dpg.show_viewport()
